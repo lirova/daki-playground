@@ -1,0 +1,15 @@
+{
+  "title": "The daki Playground",
+  "sky": "day",
+  "weather": "clear",
+  "ground": "grass",
+  "accent": "teal",
+  "marquee": "File an issue and watch this page change itself. No humans involved.",
+  "objects": [
+    { "emoji": "🏠", "x": 22, "y": 62, "size": 3 },
+    { "emoji": "🌳", "x": 70, "y": 58, "size": 3 },
+    { "emoji": "🐕", "x": 48, "y": 78, "size": 2 },
+    { "emoji": "☁️", "x": 30, "y": 14, "size": 2 },
+    { "emoji": "🤖", "x": 85, "y": 80, "size": 2 }
+  ]
+}

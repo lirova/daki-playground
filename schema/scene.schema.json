@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Playground scene",
+  "description": "The entire mutable state of the playground page. The pipeline may change THIS FILE ONLY.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "sky", "weather", "ground", "accent", "marquee", "objects"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "pattern": "^[A-Za-z0-9 .,!?'&()+:;#%-]+$"
+    },
+    "sky": { "enum": ["day", "sunset", "night", "dawn"] },
+    "weather": { "enum": ["clear", "rain", "snow", "stars", "fireflies"] },
+    "ground": { "enum": ["grass", "sand", "snow", "water", "pavement"] },
+    "accent": {
+      "enum": ["coral", "amber", "gold", "lime", "teal", "sky", "indigo", "violet", "rose", "slate"]
+    },
+    "marquee": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 80,
+      "pattern": "^[A-Za-z0-9 .,!?'&()+:;#%-]+$"
+    },
+    "objects": {
+      "type": "array",
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["emoji", "x", "y", "size"],
+        "properties": {
+          "emoji": { "type": "string", "minLength": 1, "maxLength": 16 },
+          "x": { "type": "number", "minimum": 0, "maximum": 100 },
+          "y": { "type": "number", "minimum": 0, "maximum": 100 },
+          "size": { "type": "integer", "minimum": 1, "maximum": 3 }
+        }
+      }
+    }
+  }
+}

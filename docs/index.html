@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Hard CSP: no external resources, no eval, no inline event handlers.
+     The scene renderer below uses createElement/textContent exclusively —
+     scene.json content can never become markup or script. -->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'none'">
+<title>daki playground</title>
+<style>
+  :root {
+    --accent: #2a9d8f;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: #14141c;
+    color: #eee;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+  }
+  h1 { font-size: 1.6rem; margin-bottom: 4px; color: var(--accent); font-style: italic; }
+  .sub { font-size: .85rem; color: #999; margin-bottom: 18px; font-family: ui-monospace, monospace; }
+  #stage {
+    position: relative;
+    width: min(720px, 94vw);
+    aspect-ratio: 16 / 10;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 2px solid var(--accent);
+    box-shadow: 0 8px 40px rgba(0,0,0,.5);
+  }
+  .sky-day    { background: linear-gradient(#74c0e8, #cfeefe 75%); }
+  .sky-sunset { background: linear-gradient(#3c2a55, #c4504e 60%, #f2a35e 85%); }
+  .sky-night  { background: linear-gradient(#070b1d, #1b2350 80%); }
+  .sky-dawn   { background: linear-gradient(#4a5a8a, #d99aa6 70%, #f5d9a8 90%); }
+  #ground {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 22%;
+  }
+  .ground-grass    { background: linear-gradient(#4f9d4f, #2f6d33); }
+  .ground-sand     { background: linear-gradient(#e8cf94, #c9a866); }
+  .ground-snow     { background: linear-gradient(#eef3f8, #c9d6e4); }
+  .ground-water    { background: linear-gradient(#3a7fb5, #1d4f7e); }
+  .ground-pavement { background: linear-gradient(#8a8a92, #5c5c64); }
+  .obj {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    user-select: none;
+    line-height: 1;
+    text-shadow: 0 2px 6px rgba(0,0,0,.25);
+  }
+  .obj.s1 { font-size: clamp(14px, 3vw, 24px); }
+  .obj.s2 { font-size: clamp(22px, 5vw, 40px); }
+  .obj.s3 { font-size: clamp(34px, 8vw, 64px); }
+  .particle {
+    position: absolute;
+    top: -8%;
+    user-select: none;
+    animation: fall linear infinite;
+  }
+  @keyframes fall {
+    to { transform: translateY(120%) translateY(40vh); }
+  }
+  .twinkle {
+    position: absolute;
+    user-select: none;
+    animation: twinkle ease-in-out infinite alternate;
+  }
+  @keyframes twinkle {
+    from { opacity: .15; }
+    to   { opacity: 1; }
+  }
+  #marquee {
+    width: min(720px, 94vw);
+    margin-top: 14px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+    font-size: .95rem;
+    text-align: center;
+    color: var(--accent);
+  }
+  footer {
+    margin-top: 26px;
+    font-size: .8rem;
+    color: #888;
+    text-align: center;
+    line-height: 1.7;
+    font-family: ui-monospace, monospace;
+    max-width: 640px;
+  }
+  footer span.cmd { color: #bbb; }
+</style>
+</head>
+<body>
+  <h1 id="title">daki playground</h1>
+  <div class="sub">issue &rarr; interpret &rarr; PR &rarr; CI &rarr; review &rarr; auto-merge &rarr; this page</div>
+  <div id="stage"><div id="weather"></div><div id="ground"></div><div id="objects"></div></div>
+  <div id="marquee"></div>
+  <footer>
+    This page is maintained entirely by an AI pipeline. No human edits it.<br>
+    To change it: open a <span class="cmd">"Change the page"</span> issue on the repo and watch the
+    pipeline open, review, and merge a PR — the page repaints itself in about a minute.
+  </footer>
+<script>
+"use strict";
+(function () {
+  const ACCENTS = {
+    coral: "#e76f51", amber: "#f4a261", gold: "#e9c46a", lime: "#9acd32",
+    teal: "#2a9d8f", sky: "#5fa8d3", indigo: "#5e60ce", violet: "#9d4edd",
+    rose: "#e07a9b", slate: "#94a3b8"
+  };
+  const WEATHER_PARTICLES = {
+    rain:      { glyph: "💧", count: 26, fall: true,  dur: [0.9, 1.8] },
+    snow:      { glyph: "❄", count: 22, fall: true,  dur: [4, 8] },
+    stars:     { glyph: "✦", count: 24, fall: false, dur: [1.5, 3.5] },
+    fireflies: { glyph: "✨", count: 14, fall: false, dur: [1, 2.5] }
+  };
+
+  function el(tag, cls, text) {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text; // textContent ONLY — never innerHTML
+    return node;
+  }
+
+  function render(scene) {
+    document.getElementById("title").textContent = scene.title;
+    document.title = scene.title + " — daki playground";
+    document.documentElement.style.setProperty(
+      "--accent", ACCENTS[scene.accent] || ACCENTS.teal);
+
+    const stage = document.getElementById("stage");
+    stage.className = "sky-" + scene.sky;
+    document.getElementById("ground").className = "ground-" + scene.ground;
+    document.getElementById("marquee").textContent = scene.marquee;
+
+    const objects = document.getElementById("objects");
+    objects.replaceChildren();
+    for (const o of scene.objects.slice(0, 12)) {
+      const span = el("span", "obj s" + o.size, String(o.emoji).slice(0, 16));
+      span.style.left = Math.min(100, Math.max(0, Number(o.x))) + "%";
+      span.style.top = Math.min(100, Math.max(0, Number(o.y))) + "%";
+      objects.appendChild(span);
+    }
+
+    const weather = document.getElementById("weather");
+    weather.replaceChildren();
+    const spec = WEATHER_PARTICLES[scene.weather];
+    if (spec) {
+      for (let i = 0; i < spec.count; i++) {
+        const p = el("span", spec.fall ? "particle" : "twinkle", spec.glyph);
+        p.style.left = Math.random() * 100 + "%";
+        if (!spec.fall) p.style.top = Math.random() * 70 + "%";
+        p.style.fontSize = 8 + Math.random() * 10 + "px";
+        const dur = spec.dur[0] + Math.random() * (spec.dur[1] - spec.dur[0]);
+        p.style.animationDuration = dur + "s";
+        p.style.animationDelay = -Math.random() * dur + "s";
+        weather.appendChild(p);
+      }
+    }
+  }
+
+  fetch("scene.json?v=" + Date.now())
+    .then((r) => r.json())
+    .then(render)
+    .catch(() => {
+      document.getElementById("marquee").textContent =
+        "Could not load scene.json — try a hard refresh.";
+    });
+})();
+</script>
+</body>
+</html>

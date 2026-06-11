@@ -1,0 +1,97 @@
+# STAGED — this file lives in setup/workflows/ and does nothing here.
+# Going live (public repo, free Actions minutes) moves it to .github/workflows/
+# via setup/go-live.sh — a deliberate maintainer action, never automated.
+#
+# The playground pipeline: issue in → reviewed, auto-merged PR out.
+#
+# Security posture (see SECURITY.md for the full threat model):
+#  * Untrusted issue text reaches scripts ONLY via env vars (never ${{ }}
+#    inside `run:` — that would be classic script injection).
+#  * The model is toolless: one structured-output API call per stage.
+#    It cannot run commands, read secrets, or touch the network.
+#  * ANTHROPIC_API_KEY is step-scoped to the two model stages only.
+#  * GITHUB_TOKEN is read-only; writes go through a fine-grained PAT
+#    scoped to THIS repo with NO workflow permission.
+#  * Kill switch: repo variable PLAYGROUND_ENABLED gates the whole job.
+#  * concurrency group serializes runs; guard.mjs enforces daily + per-user caps.
+name: playground
+
+on:
+  issues:
+    types: [opened]
+
+concurrency:
+  group: playground
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  pipeline:
+    if: vars.PLAYGROUND_ENABLED == 'true' && contains(github.event.issue.labels.*.name, 'playground')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ secrets.PLAYGROUND_PAT }}
+      REPO: ${{ github.repository }}
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PLAYGROUND_PAT }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci --omit=dev --no-audit --no-fund
+
+      - name: "Stage 1 GUARD - budget and abuse gates"
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: node scripts/guard.mjs
+
+      - name: "Stage 2 SANITIZE - strip request to plain text"
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: node scripts/sanitize.mjs
+
+      - name: "Stage 3 INTERPRET - toolless model call (Haiku)"
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if grep -q '"outcome": "rejected"' work/state.json 2>/dev/null; then
+            echo "skipped (already rejected)"; exit 0
+          fi
+          node scripts/interpret.mjs
+
+      - name: "Stage 4 VALIDATE - schema, charset, URL gates"
+        run: |
+          if grep -q '"outcome": "rejected"' work/state.json 2>/dev/null; then
+            echo "skipped (already rejected)"; exit 0
+          fi
+          node scripts/validate.mjs work/scene.next.json
+
+      - name: "Stage 5 REVIEW - independent model verdict (Sonnet)"
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if grep -q '"outcome": "rejected"' work/state.json 2>/dev/null; then
+            echo "skipped (already rejected)"; exit 0
+          fi
+          node scripts/review.mjs
+
+      - name: "Stage 6 PR - branch, commit, auto-merge"
+        run: |
+          if grep -q '"outcome": "rejected"' work/state.json 2>/dev/null; then
+            echo "skipped (already rejected)"; exit 0
+          fi
+          node scripts/pr.mjs
+
+      - name: "Stage 7 REPORT - comment on the issue"
+        if: always()
+        run: node scripts/report.mjs

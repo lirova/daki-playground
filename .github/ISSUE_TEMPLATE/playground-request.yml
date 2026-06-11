@@ -1,0 +1,20 @@
+name: "🎨 Change the page"
+description: Tell the pipeline what the playground page should look like. An AI agent will open, review, and merge a PR for you.
+title: "[playground] "
+labels: ["playground"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **How this works:** describe one small change to the [live page](https://lirova.github.io/daki-playground/) — the pipeline interprets it, opens a PR, reviews it, and auto-merges if it passes. The page repaints itself in about a minute.
+
+        Good requests: *"make it snow at night"* · *"add a cat on the roof"* · *"sunset sky and change the message to Hello from Tokyo"*
+
+        The page is a fixed toy scene (sky, weather, ground, accent color, a short message, up to 12 emoji). Requests outside that — or anything rude — get politely declined by the review stage.
+  - type: textarea
+    id: request
+    attributes:
+      label: What should change?
+      placeholder: Make it rain, add a duck in the pond, and change the message to Quack.
+    validations:
+      required: true

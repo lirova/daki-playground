@@ -1,0 +1,36 @@
+# STAGED — this file lives in setup/workflows/ and does nothing here.
+# Going live moves it to .github/workflows/ via setup/go-live.sh.
+#
+# Required CI check on every PR ("validate" is the branch-protection gate
+# auto-merge waits for). Enforces:
+#   * scope: only docs/scene.json may change
+#   * content: scene passes schema + charset + URL rules
+name: ci
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci --omit=dev --no-audit --no-fund
+
+      - name: Scope + schema check
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: node scripts/ci-check.mjs
