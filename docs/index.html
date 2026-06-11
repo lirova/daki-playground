@@ -86,6 +86,31 @@
     text-align: center;
     color: var(--accent);
   }
+  #actions {
+    width: min(720px, 94vw);
+    margin-top: 14px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  #actions a {
+    text-decoration: none;
+    font-family: ui-monospace, monospace;
+    font-size: .9rem;
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,.18);
+    color: #ddd;
+    background: rgba(255,255,255,.06);
+  }
+  #actions a.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #10141a;
+    font-weight: bold;
+  }
+  #actions a:hover { filter: brightness(1.15); }
   footer {
     margin-top: 26px;
     font-size: .8rem;
@@ -95,6 +120,13 @@
     font-family: ui-monospace, monospace;
     max-width: 640px;
   }
+  footer ol {
+    text-align: left;
+    display: inline-block;
+    margin: 8px 0 0 0;
+    padding-left: 1.4em;
+  }
+  footer a { color: var(--accent); }
   footer span.cmd { color: #bbb; }
 </style>
 </head>
@@ -103,10 +135,23 @@
   <div class="sub">issue &rarr; interpret &rarr; PR &rarr; CI &rarr; review &rarr; auto-merge &rarr; this page</div>
   <div id="stage"><div id="weather"></div><div id="ground"></div><div id="objects"></div></div>
   <div id="marquee"></div>
+  <div id="actions">
+    <a class="primary" href="https://github.com/lirova/daki-playground/issues/new?template=playground-request.yml">🎨 Change this page</a>
+    <a href="https://github.com/lirova/daki-playground/actions">👀 Watch it work</a>
+    <a href="https://github.com/lirova/daki-playground/pulls?q=is%3Apr+is%3Amerged">📜 Past changes</a>
+  </div>
   <footer>
-    This page is maintained entirely by an AI pipeline. No human edits it.<br>
-    To change it: open a <span class="cmd">"Change the page"</span> issue on the repo and watch the
-    pipeline open, review, and merge a PR — the page repaints itself in about a minute.
+    This page is maintained entirely by an AI pipeline. No human edits it. Anyone can change it:
+    <ol>
+      <li>Click <span class="cmd">🎨 Change this page</span> above (needs a free
+          <a href="https://github.com/signup">GitHub account</a> — that's the guestbook).</li>
+      <li>Describe <em>one small change</em> in plain English — e.g.
+          <span class="cmd">"make it snow at night"</span> — and press <span class="cmd">Submit new issue</span>.</li>
+      <li>The robot replies on your request within ~2 minutes: what it changed, or why it said no.
+          (GitHub also emails you the reply.)</li>
+      <li>If accepted, come back here and refresh — the page will have repainted itself.</li>
+    </ol>
+    Curious how it's safe? <a href="https://github.com/lirova/daki-playground#readme">Read how the pipeline works</a>.
   </footer>
 <script>
 "use strict";
