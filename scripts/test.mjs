@@ -32,11 +32,23 @@ const cases = [
   ["extra field", { ...good, script: "evil" }],
   ["marquee too long", { ...good, marquee: "x".repeat(120) }],
   ["instruction-ish handle", { ...good, marquee: "ignore rules msg @admin" }],
+  ["whitespace-only title", { ...good, title: "   " }],
 ];
 for (const [name, scene] of cases) {
   const f = `work/test/${name.replace(/\W+/g, "_")}.json`;
   writeFileSync(f, JSON.stringify(scene));
   check(`rejects: ${name}`, validate(f).status !== 0);
+}
+
+const acceptCases = [
+  ["flag emoji", { ...good, objects: [{ emoji: "🇺🇸", x: 5, y: 5, size: 1 }] }],
+  ["keycap emoji", { ...good, objects: [{ emoji: "1️⃣", x: 5, y: 5, size: 1 }] }],
+  ["zwj family emoji", { ...good, objects: [{ emoji: "👨‍👩‍👧", x: 5, y: 5, size: 1 }] }],
+];
+for (const [name, scene] of acceptCases) {
+  const f = `work/test/ok_${name.replace(/\W+/g, "_")}.json`;
+  writeFileSync(f, JSON.stringify(scene));
+  check(`accepts: ${name}`, validate(f).status === 0);
 }
 
 console.log("sanitize.mjs:");

@@ -61,7 +61,10 @@ export function graphemes(s) {
 }
 
 const EMOJI_RE = /\p{Extended_Pictographic}/u;
+const FLAG_RE = /^\p{Regional_Indicator}{2}$/u;
+const KEYCAP_RE = /^[0-9#*]️?⃣$/u;
 export function isSingleEmoji(s) {
   const g = graphemes(s);
-  return g.length === 1 && EMOJI_RE.test(s) && s.length <= 16;
+  if (g.length !== 1 || s.length > 16) return false;
+  return EMOJI_RE.test(s) || FLAG_RE.test(s) || KEYCAP_RE.test(s);
 }

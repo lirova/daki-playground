@@ -12,7 +12,7 @@
     "test": "node scripts/test.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
+    "@anthropic-ai/sdk": "^0.104.1",
     "ajv": "^8.17.1"
   }
 }

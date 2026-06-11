@@ -13,6 +13,8 @@ const MAX_BODY_LENGTH = 2000;      // pre-sanitize raw cap
 saveState({ issue: Number(ISSUE_NUMBER), author: ISSUE_AUTHOR, outcome: "running" });
 
 // 1. Daily run ceiling — counts today's playground workflow runs.
+// FAIL CLOSED: if the count comes back unparseable (empty/null body with a
+// zero exit), treat it as over-budget rather than letting the gate pass.
 const today = new Date().toISOString().slice(0, 10);
 const runsToday = Number(
   gh([
@@ -21,7 +23,7 @@ const runsToday = Number(
     "--jq", ".total_count",
   ])
 );
-if (runsToday > MAX_RUNS_PER_DAY) {
+if (!Number.isFinite(runsToday) || runsToday > MAX_RUNS_PER_DAY) {
   reject("guard", "The playground hit its daily budget ceiling. Try again tomorrow!");
 }
 
@@ -33,7 +35,7 @@ const openByAuthor = Number(
     "--jq", "length",
   ])
 );
-if (openByAuthor > MAX_OPEN_PER_AUTHOR) {
+if (!Number.isFinite(openByAuthor) || openByAuthor > MAX_OPEN_PER_AUTHOR) {
   reject(
     "guard",
     `You already have ${MAX_OPEN_PER_AUTHOR} playground requests in flight — please wait for those to finish first.`

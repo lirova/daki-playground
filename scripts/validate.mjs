@@ -24,6 +24,7 @@ if (!valid) {
 // Rules beyond the schema:
 for (const field of ["title", "marquee"]) {
   const v = scene[field];
+  if (v.trim().length === 0) fail(`${field} is whitespace-only`);
   if (URLISH_RE.test(v)) fail(`${field} contains URL-like or contact-like content`);
   if (!TEXT_RE.test(v)) fail(`${field} contains characters outside the whitelist`);
 }
